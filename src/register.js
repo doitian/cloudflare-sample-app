@@ -2,6 +2,18 @@ import { AWW_COMMAND, INVITE_COMMAND } from './commands.js';
 import dotenv from 'dotenv';
 import process from 'node:process';
 
+import { env } from 'process';
+import { setGlobalDispatcher, ProxyAgent } from 'undici';
+
+if (env.https_proxy) {
+  // Corporate proxy uses CA not in undici's certificate store
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  const dispatcher = new ProxyAgent({
+    uri: new URL(env.https_proxy).toString(),
+  });
+  setGlobalDispatcher(dispatcher);
+}
+
 /**
  * This file is meant to be run from the command line, and is not used by the
  * application server.  It's allowed to use node.js primitives, and only needs

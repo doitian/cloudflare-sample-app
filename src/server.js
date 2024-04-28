@@ -7,9 +7,11 @@ import {
   InteractionResponseType,
   InteractionType,
   verifyKey,
+  MessageComponentTypes,
+  ButtonStyleTypes,
+  TextStyleTypes,
 } from 'discord-interactions';
 import { AWW_COMMAND, INVITE_COMMAND } from './commands.js';
-import { getCuteUrl } from './reddit.js';
 import { InteractionResponseFlags } from 'discord-interactions';
 
 class JsonResponse extends Response {
@@ -59,11 +61,80 @@ router.post('/', async (request, env) => {
     // Most user commands will come as `APPLICATION_COMMAND`.
     switch (interaction.data.name.toLowerCase()) {
       case AWW_COMMAND.name.toLowerCase(): {
-        const cuteUrl = await getCuteUrl();
         return new JsonResponse({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: cuteUrl,
+            embeds: [
+              {
+                title: '1',
+                image: {
+                  url: 'https://picsum.photos/200/300',
+                  width: 200,
+                  height: 300,
+                },
+              },
+              {
+                title: '2',
+                image: {
+                  url: 'https://picsum.photos/200/300',
+                  width: 200,
+                  height: 300,
+                },
+              },
+              {
+                title: '3',
+                image: {
+                  url: 'https://picsum.photos/200/300',
+                  width: 200,
+                  height: 300,
+                },
+              },
+            ],
+            components: [
+              {
+                type: MessageComponentTypes.ACTION_ROW,
+                components: [
+                  {
+                    type: MessageComponentTypes.BUTTON,
+                    style: ButtonStyleTypes.SECONDARY,
+                    label: 'Next',
+                    custom_id: 'next',
+                  },
+                  {
+                    type: MessageComponentTypes.BUTTON,
+                    style: ButtonStyleTypes.SECONDARY,
+                    label: 'Prev',
+                    custom_id: 'prev',
+                  },
+                ],
+              },
+              {
+                type: MessageComponentTypes.ACTION_ROW,
+                components: [
+                  {
+                    type: MessageComponentTypes.STRING_SELECT,
+                    options: [
+                      {
+                        label: '1',
+                        value: '1',
+                      },
+                      {
+                        label: '2',
+                        value: '2',
+                      },
+                      {
+                        label: '3',
+                        value: '3',
+                      },
+                    ],
+                    custom_id: 'refine',
+                    placeholder: 'Choose an item to refine',
+                    min_values: 1,
+                    max_values: 1,
+                  },
+                ],
+              },
+            ],
           },
         });
       }
@@ -81,6 +152,50 @@ router.post('/', async (request, env) => {
       default:
         return new JsonResponse({ error: 'Unknown Type' }, { status: 400 });
     }
+  }
+
+  if (interaction.type === InteractionType.MESSAGE_COMPONENT) {
+    switch (interaction.data.custom_id) {
+      case 'refine':
+        return new JsonResponse({
+          type: InteractionResponseType.MODAL,
+          data: {
+            custom_id: 'refine_modal',
+            title: 'Refine',
+            components: [
+              {
+                type: MessageComponentTypes.ACTION_ROW,
+                components: [
+                  {
+                    type: MessageComponentTypes.INPUT_TEXT,
+                    custom_id: 'prompt',
+                    label: 'Prompt',
+                    style: TextStyleTypes.SHORT,
+                    min_length: 1,
+                    max_length: 4000,
+                  },
+                ],
+              },
+            ],
+          },
+        });
+      default:
+        return new JsonResponse({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: JSON.stringify(interaction.data),
+          },
+        });
+    }
+  }
+
+  if (interaction.type === InteractionType.MODAL_SUBMIT) {
+    return new JsonResponse({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        content: JSON.stringify(interaction.data),
+      },
+    });
   }
 
   console.error('Unknown Type');
